@@ -1,15 +1,17 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet'); // Import helmet
 require('dotenv').config(); // Make sure this is at the top
 const { sequelize } = require('./models'); // Import sequelize instance
 const http = require('http');
 const { Server } = require('socket.io');
+const { errorHandler } = require('./middleware/errorMiddleware'); // Import errorHandler
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
 });
@@ -22,7 +24,10 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-app.use(cors()); // Allows your React frontend to talk to this server
+app.use(helmet()); // Use helmet
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173'
+})); // Allows your React frontend to talk to this server
 app.use(express.json()); // Parses incoming JSON requests
 
 // Add io to the request object
@@ -48,6 +53,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.get('/', (req, res) => {
   res.send('CRM Backend is running!');
 });
+
+// Use error handler
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,23 +1,18 @@
-# Use an official Node.js runtime as a parent image
-FROM node:18-alpine
-
-# Set the working directory in the container
+# ---- Base Stage ----
+FROM node:18-alpine AS base
 WORKDIR /usr/src/app
-
-# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install any needed packages
-RUN npm install
-
-# Copy the rest of the application code to the working directory
+# ---- Dependencies Stage ----
+FROM base AS dependencies
+RUN npm install --production
 COPY . .
 
-# Run database migrations
+# ---- Release Stage ----
+FROM base AS release
+COPY --from=dependencies /usr/src/app .
+COPY start.sh .
+RUN chmod +x ./start.sh
 
-
-# Make port 5000 available to the world outside this container
 EXPOSE 5000
-
-# Define the command to run the app
-CMD ["node", "index.js"]
+CMD ["./start.sh", "node", "index.js"]
